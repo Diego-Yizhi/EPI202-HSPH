@@ -11,9 +11,16 @@ source(here("code","epicalc_v3.R"))
 mi_onset_10 <- import(here("data","MI_Onset_10.rdata"))
 glimpse(mi_onset_10)
 skimr::skim(mi_onset_10)
+mi_onset_10 <- mi_onset_10 %>% mutate(sedendm = case_when(
+  phys_activity==0 & dm==1 ~ 1,
+  phys_activity!=0 & dm==1 ~ 2,
+  phys_activity==0 & dm!=1 ~ 3,
+  phys_activity!=0 & dm!=1 ~ 4
+))
+
 
 # adjust factor variables
-fac_vars <- names(mi_onset_10)[c(1,3:10,12:13)]
+fac_vars <- names(mi_onset_10)[c(1,3:10,12:14)]
 mi_onset_10[fac_vars] <- lapply(mi_onset_10[fac_vars],factor)
 
 mi_onset_10_cat <- mi_onset_10 %>%
@@ -28,10 +35,14 @@ mi_onset_10_cat <- mi_onset_10 %>%
          evermarj_cat=fct_recode(evermarj,"yes"="1","no"="0"),
          dead_cat=fct_recode(dead,"yes"="1","no"="0"),
          cvdeath_cat=fct_recode(cvdeath,"CVD death"="1","not CVD death"="0"),
-         sedentary = fct_recode(phys_activity, "yes"="0", "no"="1","no"="2")
+         sedentary = fct_recode(phys_activity, "yes"="0", "no"="1","no"="2"),
+         sedendm_cat = fct_recode(sedendm, "sedentary and diabetes"="1",
+                                  "no sedentary and diabetes"="2", "sedentary and no diabetes"="3",
+                                  "no sedentary and no diabetes"="4")
          ) %>%
   mutate(dead_cat = fct_rev(dead_cat),
-         sedentary = fct_rev(sedentary))
+         sedentary = fct_rev(sedentary),
+         sedendm_cat = fct_rev(sedendm_cat))
 
 # 1 Classroom -----------------------------------------------------------------------------------------------------
 
@@ -189,7 +200,7 @@ mi_onset_10_cat %>%
 
 # 4 A4 regression -------------------------------------------------------------------------------------------------
 
-log_model <- glm(dead_cat ~ sedentary + dm_cat +
+log_model <- glm(dead ~ sedentary + dm_cat +
                    htn_cat + female_cat + age,
                  data = mi_onset_10_cat,
                  family = binomial(link = 'logit'))
@@ -208,7 +219,7 @@ log_model %>%
   bstfun::add_inline_forest_plot()
 
 # Q1b
-log_model_emm <- glm(dead_cat~sedentary*dm_cat+htn_cat+female_cat+age,
+log_model_emm <- glm(dead~sedentary*dm_cat+htn_cat+female_cat+age,
                      data = mi_onset_10_cat,
                      family = binomial(link = "logit"))
 summary(log_model_emm)
@@ -227,16 +238,44 @@ log_model_emm %>%
 
 log_model_emm %>% bruceR::model_summary()
 
+# Q2a
+
+(log_model_crude <- glm(dead~sedentary,
+                       data = mi_onset_10_cat,
+                       family = binomial(link = 'logit')) %>%
+  tidy(exponentiate = T, conf.int = T) %>%
+  mutate(across(where(is.numeric), round, digits = 3)))
+
+(log_model_agesex <- glm(dead~sedentary+age+female_cat,
+                        data = mi_onset_10_cat,
+                        family = binomial(link = "logit")) %>%
+  tidy(exponentiate = T, conf.int = T) %>%
+  mutate(across(where(is.numeric), round, digits = 3)))
+
+(log_model_ful <- glm(dead~sedentary+dm_cat+htn_cat+female_cat+age,
+                     data = mi_onset_10_cat,
+                     family = binomial(link = "logit")) %>%
+  tidy(exponentiate = T, conf.int = T) %>%
+  mutate(across(where(is.numeric), round, digits = 3)))
+
+(log_model_ful_emm <- glm(dead~sedentary*dm_cat+htn_cat+female_cat+age,
+                     data = mi_onset_10_cat,
+                     family = binomial(link = "logit")) %>%
+  tidy(conf.int = T) %>%
+  mutate(across(where(is.numeric), round, digits = 3)))
+
+(log_model_ful <- glm(dead~sedentary+dm_cat+htn_cat+female_cat+age,
+                          data = mi_onset_10_cat,
+                          family = binomial(link = "logit")) %>%
+    tidy(conf.int = T) %>%
+    mutate(across(where(is.numeric), round, digits = 3)))
 
 
 
 
-
-
-
-
-
-
-
-
-
+(log_model_add_emm <-  glm(dead~sedendm_cat+htn_cat+female_cat+age,
+                           data = mi_onset_10_cat,
+                           family = binomial(link = "logit")) %>%
+    tidy(exponentiate=T,
+         conf.int=T) %>%
+    mutate(across(where(is.numeric),round,digits=3)))
