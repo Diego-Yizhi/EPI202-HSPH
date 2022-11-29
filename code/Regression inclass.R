@@ -1,7 +1,7 @@
 #Load packages
 pacman::p_load(tidyverse, patchwork, ggsignif,
                gtsummary, janitor, rstatix,
-               scales, flextable, here,rio,table1)
+               scales, flextable, here,rio,tableone)
 #Source the epicalc package- set this to the file path where you saved the epicalc_v3 file
 source(here("code","epicalc_v3.R"))
 # source("code/epicalc_v3.R")
@@ -46,15 +46,19 @@ dat_new %>%
               )
   ) %>% add_p()
 
-dat_new %>%
-  mutate(age_cat = case_when(
-    age<15 ~ 1,
-    age>=15 & age<=18 ~ 2,
-    age>18 ~ 3
-  )) %>% tableone::CreateTableOne(vars = c(age, age_cat),
-                                  strata = female,
-                                  factorVars = "age_cat")
-
+vars <- c("age", "age_cat")
+dat_new <- dat_new %>% mutate(age_cat = case_when(
+  age<15 ~ 1,
+  age>=15 & age<=18 ~ 2,
+  age>18 ~ 3
+))
+table1 <- CreateTableOne(data = dat_new,
+                         vars = vars,
+                         strata = "female",
+                         factorVars = "age_cat",
+                         includeNA = T)
+table1 <- print(table1, showAllLevels = TRUE)
+write.csv(table1, file = "data/height by gender.csv")
 
 # 5 height ~ age
 dat_new %>%
