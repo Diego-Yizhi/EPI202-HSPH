@@ -1,7 +1,7 @@
 #Load packages
 pacman::p_load(tidyverse, patchwork, ggsignif,
                gtsummary, janitor, rstatix,
-               scales, flextable, here,rio)
+               scales, flextable, here,rio,table1)
 #Source the epicalc package- set this to the file path where you saved the epicalc_v3 file
 source(here("code","epicalc_v3.R"))
 # source("code/epicalc_v3.R")
@@ -11,6 +11,11 @@ source(here("code","epicalc_v3.R"))
 dat <- import(here("data","HeightWeight.rdata"))
 glimpse(dat)
 skimr::skim(dat)
+
+dat <- dat %>%
+  mutate(female_cat = factor(female,
+                             levels = c(0,1),
+                             labels = c("Male","Female")))
 
 # 2 height vs age
 dat %>%
@@ -41,17 +46,41 @@ dat_new %>%
               )
   ) %>% add_p()
 
+dat_new %>%
+  mutate(age_cat = case_when(
+    age<15 ~ 1,
+    age>=15 & age<=18 ~ 2,
+    age>18 ~ 3
+  )) %>% tableone::CreateTableOne(vars = c(age, age_cat),
+                                  strata = female,
+                                  factorVars = "age_cat")
+
+
 # 5 height ~ age
 dat_new %>%
   lm(height~age, data = .) %>%
   tidy(conf.int = T) %>%
   mutate(across(where(is.numeric),round,digits=3))
 
+# 7 expected height for a 16-year-old
 dat_new %>%
   lm(height~age, data=.) %>%
-  report::report()
+  predict(newdata = data.frame(age = 16))
 
-# 7 predict age=16
+# 8 scatter of height as precited sex
+dat_new %>%
+  ggplot(aes(x=female,y=height))+geom_point()
 
+# 10 height~age+female
+dat_new %>%
+  lm(height~age+female, data = .) %>%
+  tidy(conf.int = T) %>%
+  mutate(across(where(is.numeric),round,digits=3))
+
+# 15 and 16 association
+dat_new %>%
+  lm(height~age*female, data=.) %>%
+  tidy(conf.int=T) %>%
+  mutate(across(where(is.numeric),round,digits=3))
 
 
