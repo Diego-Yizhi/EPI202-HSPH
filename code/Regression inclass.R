@@ -46,17 +46,21 @@ dat_new %>%
               )
   ) %>% add_p()
 
-vars <- c("age", "age_cat")
 dat_new <- dat_new %>% mutate(age_cat = case_when(
   age<15 ~ 1,
   age>=15 & age<=18 ~ 2,
   age>18 ~ 3
 ))
+
+vars <- c("age", "age_cat")
+
 table1 <- CreateTableOne(data = dat_new,
                          vars = vars,
                          strata = "female",
                          factorVars = "age_cat",
-                         includeNA = T)
+                         includeNA = T,
+                         addOverall = T
+                         )
 table1 <- print(table1, showAllLevels = TRUE)
 write.csv(table1, file = "data/height by gender.csv")
 

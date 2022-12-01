@@ -1,7 +1,7 @@
 #Load packages
 pacman::p_load(tidyverse, patchwork, ggsignif,
                gtsummary, janitor, rstatix,
-               scales, flextable, here,rio)
+               scales, flextable, here,rio, tableone)
 #Source the epicalc package- set this to the file path where you saved the epicalc_v3 file
 source(here("code","epicalc_v3.R"))
 # source("code/epicalc_v3.R")
@@ -179,6 +179,17 @@ mi_onset_10_cat %>%
       htn_cat ~ "Hypertension"
     )
   ) %>% add_p()
+
+vars_mi <- names(mi_onset_10_cat)[c(2,3,15:19)]
+fac_vars_mi <- names(mi_onset_10_cat)[c(3,15:19)]
+table1 <- CreateTableOne(vars = vars_mi,
+                         strata = "sedentary",
+                         data = mi_onset_10_cat,
+                         addOverall = T, includeNA = T)
+table1_print <- print(table1,showAllLevels = T)
+export(table1_print, "HW/HW3/A3_tableone.xlsx", rowNames = T,
+       colNames = T)
+write.csv(table1_print, "HW/HW3/A3_tableone.csv")
 
 mi_onset_10_cat %>%
   group_by(sedentary) %>%
