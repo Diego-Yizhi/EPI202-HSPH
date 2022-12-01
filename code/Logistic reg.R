@@ -77,8 +77,8 @@ log_3 <- glm(cvdeath_cat ~ dm_cat+age+htn_cat+female_cat+phys_cat+educ_cat,
 modelsummary(list(log_1, log_2, log_3),
              exponentiate = T,
              stars = T,
-             output = "huxtable") %>%
-  export("weekly materials/6 Logistic regression/regression.xlsx")
+             output = here("weekly materials","6 Logistic regression",
+                           "log_1 to log_3.docx"))
 
 # 8 htn*dm
 log_4 <- glm(cvdeath_cat ~ dm_cat*htn_cat+age+female_cat+phys_cat+educ_cat,
@@ -87,10 +87,8 @@ log_4 <- glm(cvdeath_cat ~ dm_cat*htn_cat+age+female_cat+phys_cat+educ_cat,
 modelsummary(list(log_3, log_4),
              estimate  = "{estimate} ({conf.low}, {conf.high})",
              statistic = NULL,
-             exponentiate = T,output = "huxtable")
-
-modelsummary(list(log_3, log_4),
-             estimate  = "{estimate} ({conf.low}, {conf.high})",
-             statistic = NULL,output = "huxtable")
+             exponentiate = T,
+             output = here("weekly materials","6 Logistic regression",
+                                            "log_3 and 4.docx"))
 
 
