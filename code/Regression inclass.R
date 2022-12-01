@@ -1,7 +1,7 @@
 #Load packages
 pacman::p_load(tidyverse, patchwork, ggsignif,
                gtsummary, janitor, rstatix,
-               scales, flextable, here,rio,tableone)
+               scales, flextable, here,rio,modelsummary)
 #Source the epicalc package- set this to the file path where you saved the epicalc_v3 file
 source(here("code","epicalc_v3.R"))
 # source("code/epicalc_v3.R")
@@ -52,17 +52,12 @@ dat_new <- dat_new %>% mutate(age_cat = case_when(
   age>18 ~ 3
 ))
 
-vars <- c("age", "age_cat")
-
-table1 <- CreateTableOne(data = dat_new,
-                         vars = vars,
-                         strata = "female",
-                         factorVars = "age_cat",
-                         includeNA = T,
-                         addOverall = T
-                         )
-table1 <- print(table1, showAllLevels = TRUE)
-write.csv(table1, file = "data/height by gender.csv")
+datasummary_balance(~female,
+                    data = dat_new[c("age","age_cat","female")],
+                    output = "huxtable",
+                    fmt = 3,
+                    stars = T,
+                    dinm_statistic = "p.value")
 
 # 5 height ~ age
 dat_new %>%
