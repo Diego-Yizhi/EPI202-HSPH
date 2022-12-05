@@ -1,7 +1,8 @@
 #Load packages
 pacman::p_load(tidyverse, patchwork, ggsignif,
                gtsummary, janitor, rstatix,
-               scales, flextable, here,rio, tableone)
+               scales, flextable, here,rio,modelsummary,
+               epiR)
 #Source the epicalc package- set this to the file path where you saved the epicalc_v3 file
 source(here("code","epicalc_v3.R"))
 # source("code/epicalc_v3.R")
@@ -211,82 +212,74 @@ mi_onset_10_cat %>%
 
 # 4 A4 regression -------------------------------------------------------------------------------------------------
 
-log_model <- glm(dead ~ sedentary + dm_cat +
-                   htn_cat + female_cat + age,
-                 data = mi_onset_10_cat,
-                 family = binomial(link = 'logit'))
-summary(log_model)
-tidy(log_model)
-
-log_model %>%
-  tbl_regression(exponentiate = T,
-                 label = list(
-                   sedentary ~ "Sedentary lifestyle at baseline",
-                   dm_cat ~ "Diabetes",
-                   htn_cat ~ "Hypertension",
-                   female_cat ~ "Gender",
-                   age ~ "Age (years)"
-                 )) %>%
-  bstfun::add_inline_forest_plot()
-
-# Q1b
-log_model_emm <- glm(dead~sedentary*dm_cat+htn_cat+female_cat+age,
-                     data = mi_onset_10_cat,
-                     family = binomial(link = "logit"))
-summary(log_model_emm)
-tidy(log_model_emm)
-
-log_model_emm %>%
-  tbl_regression(exponentiate = T,
-                 label = list(
-                   sedentary ~ "Sedentary lifestyle at baseline",
-                   dm_cat ~ "Diabetes",
-                   htn_cat ~ "Hypertension",
-                   female_cat ~ "Gender",
-                   age ~ "Age (years)"
-                 )) %>%
-  bstfun::add_inline_forest_plot()
-
-log_model_emm %>% bruceR::model_summary()
-
-# Q2a
-
-(log_model_crude <- glm(dead~sedentary,
-                       data = mi_onset_10_cat,
-                       family = binomial(link = 'logit')) %>%
-  tidy(exponentiate = T, conf.int = T) %>%
-  mutate(across(where(is.numeric), round, digits = 3)))
-
-(log_model_agesex <- glm(dead~sedentary+age+female_cat,
-                        data = mi_onset_10_cat,
-                        family = binomial(link = "logit")) %>%
-  tidy(exponentiate = T, conf.int = T) %>%
-  mutate(across(where(is.numeric), round, digits = 3)))
-
-(log_model_ful <- glm(dead~sedentary+dm_cat+htn_cat+female_cat+age,
-                     data = mi_onset_10_cat,
-                     family = binomial(link = "logit")) %>%
-  tidy(exponentiate = T, conf.int = T) %>%
-  mutate(across(where(is.numeric), round, digits = 3)))
-
-(log_model_ful_emm <- glm(dead~sedentary*dm_cat+htn_cat+female_cat+age,
-                     data = mi_onset_10_cat,
-                     family = binomial(link = "logit")) %>%
-  tidy(conf.int = T) %>%
-  mutate(across(where(is.numeric), round, digits = 3)))
-
-(log_model_ful <- glm(dead~sedentary+dm_cat+htn_cat+female_cat+age,
-                          data = mi_onset_10_cat,
-                          family = binomial(link = "logit")) %>%
-    tidy(conf.int = T) %>%
-    mutate(across(where(is.numeric), round, digits = 3)))
+log_1 <- mi_onset_10_cat %>%
+  glm(dead~sedentary+dm_cat+htn_cat+female_cat+age,
+      data = .,
+      family=binomial(link = "logit"))
+exp(5*(log_1 %>% tidy(conf.int = T))[6,2])
+exp(5*(log_1 %>% tidy(conf.int = T))[6,6])
+exp(5*(log_1 %>% tidy(conf.int = T))[6,7])
 
 
+log_2 <- mi_onset_10_cat %>%
+  glm(dead~sedentary*dm_cat+htn_cat+female_cat+age,
+      data = .,
+      family=binomial(link = "logit"))
+(log_2 %>% tidy(conf.int = T))
+exp((log_2 %>% tidy(conf.int = T))[2,2]+(log_2 %>% tidy(conf.int = T))[7,2])
+exp((log_2 %>% tidy(conf.int = T))[2,2])
 
+log_crude <- mi_onset_10_cat %>%
+  glm(dead~sedentary,
+      data = .,
+      family=binomial(link = "logit"))
+(log_crude %>% tidy(exponentiate=T,conf.int = T))
 
-(log_model_add_emm <-  glm(dead~sedendm_cat+htn_cat+female_cat+age,
-                           data = mi_onset_10_cat,
-                           family = binomial(link = "logit")) %>%
-    tidy(exponentiate=T,
-         conf.int=T) %>%
-    mutate(across(where(is.numeric),round,digits=3)))
+log_agesex <- mi_onset_10_cat %>%
+  glm(dead~sedentary+age+female_cat,
+      data = .,
+      family=binomial(link = "logit"))
+(log_agesex %>% tidy(exponentiate=T,conf.int = T))
+
+log_full <- mi_onset_10_cat %>%
+  glm(dead~sedentary+age+female_cat+dm_cat+htn_cat,
+      data = .,
+      family=binomial(link = "logit"))
+(log_full %>% tidy(exponentiate=T,conf.int = T))
+
+modelsummary(list(log_crude, log_agesex, log_full),
+             exponentiate = T,
+             estimate  = "{estimate} ({conf.low}, {conf.high})",
+             statistic = NULL,
+             output = "huxtable")
+
+log_full <- mi_onset_10_cat %>%
+  glm(dead~sedentary+age+female_cat+dm_cat+htn_cat,
+      data = .,
+      family=binomial(link = "logit"))
+(log_full %>% tidy(conf.int = T))
+exp(5*(log_full %>% tidy(conf.int = T))[3,2])
+exp(5*(log_full %>% tidy(conf.int = T))[3,6])
+exp(5*(log_full %>% tidy(conf.int = T))[3,7])
+
+log_interaction <- mi_onset_10_cat %>%
+  glm(dead~sedentary*dm_cat+age+female_cat+htn_cat,
+      data = .,
+      family=binomial(link = "logit"))
+(log_interaction %>% tidy(exponentiate = T, conf.int = T))
+beta_sen_dm <- log_interaction$coefficients[2]+log_interaction$coefficients[7]
+CI_LB_sen_dm <- beta_sen_dm-
+  1.96*sqrt(vcov(log_interaction)[2,2]+
+  vcov(log_interaction)[7,7]+
+  2*vcov(log_interaction)[2,7])
+CI_UB_sen_dm <- beta_sen_dm+
+  1.96*sqrt(vcov(log_interaction)[2,2]+
+              vcov(log_interaction)[7,7]+
+              2*vcov(log_interaction)[2,7])
+rbind(beta_sen_dm, CI_LB_sen_dm, CI_UB_sen_dm)
+exp(rbind(beta_sen_dm, CI_LB_sen_dm, CI_UB_sen_dm))
+
+epi.interaction(model = log_interaction,
+                param = "product",
+                coef = c(2,3,7),
+                conf.level = 0.95)
