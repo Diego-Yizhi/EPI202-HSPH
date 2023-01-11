@@ -12,7 +12,11 @@ cvdeath <- import(here("data","CVdeath_Case_control.rdata"))
 
 # adjust factor variables
 fac_vars <- names(cvdeath)[c(3:10)]
-cvdeath[fac_vars] <- lapply(cvdeath[fac_vars],factor)
+
+cvdeath[fac_vars] <- map_dfc(cvdeath[fac_vars], factor)
+glimpse(cvdeath)
+
+# cvdeath[fac_vars] <- lapply(cvdeath[fac_vars],factor)
 
 cvdeath_cat <- cvdeath %>%
   mutate(age_cat = fct_recode(age_cat,
